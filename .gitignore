@@ -1,0 +1,60 @@
+# ==================== Python ====================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ==================== 虚拟环境 ====================
+.venv/
+venv/
+env/
+*.env
+
+# ==================== IDE 与编辑器 ====================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==================== 训练输出 ====================
+outputs/
+outputs_multi_turn/
+runs/
+checkpoints/
+
+# ==================== 模型文件（体积大，不提交） ====================
+Qwen3.5-0.8B/
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.gguf
+*.onnx
+
+# ==================== 原始数据集（体积大，不提交） ====================
+jiandanxinli_qa_data_v1.0.json
+joke_story_v0.1.json
+
+# ==================== 补充数据（No-*.json） ====================
+data/No*.json
+data/No-*.json
+
+# ==================== 处理后数据（体积大或可重新生成） ====================
+data/cleaned/
+data/classified/
+data/fused/
+data/split/
+data/multi_turn_qa.json
+data/人工标注/
+
+# ==================== 操作系统 ====================
+.DS_Store
+Thumbs.db
+
+# ==================== 调试文件 ====================
+joke_sample_debug.txt

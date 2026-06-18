@@ -1,0 +1,34 @@
+# ============================================================
+# 自然语言处理期末项目 - 依赖清单
+# 安装方式: pip install -r requirements.txt
+# ============================================================
+
+# ==================== 深度学习框架 ====================
+torch>=2.0.0                    # PyTorch 深度学习框架
+
+# ==================== 模型加载与推理 ====================
+transformers>=4.36.0            # HuggingFace Transformers（模型加载、分词器）
+datasets>=2.14.0                # HuggingFace 数据集加载（训练数据读取）
+
+# ==================== 模型微调 ====================
+peft>=0.7.0                     # PEFT: LoRA 参数高效微调
+
+# ==================== Web 服务 ====================
+fastapi>=0.104.0                # FastAPI Web 框架（REST API 服务）
+uvicorn[standard]>=0.24.0       # ASGI 服务器（运行 FastAPI）
+pydantic>=2.5.0                 # 数据模型校验（FastAPI 请求/响应）
+jinja2>=3.1.0                   # Jinja2 模板引擎（HTML 渲染）
+
+# ==================== API 客户端 ====================
+openai>=1.6.0                   # OpenAI SDK（兼容 DeepSeek / 豆包 API）
+
+# ==================== 数据预处理（均为标准库） ====================
+# json       - 读写 JSON/JSONL 格式数据
+# os         - 文件路径和目录操作
+# re         - 正则表达式处理
+# subprocess - 调用外部命令（GPU 检测）
+
+# ==================== 可选：GPU 支持 ====================
+# NVIDIA GPU: pip install torch --index-url https://download.pytorch.org/whl/cu121
+# AMD GPU:    pip install torch --index-url https://download.pytorch.org/whl/rocm5.6
+# CPU 版本:  pip install torch torchvision torchaudio
