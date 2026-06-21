@@ -34,7 +34,7 @@ import multiprocessing
 import os as _os
 _cur_dir = _os.path.dirname(_os.path.abspath(__file__))
 BASE_MODEL_PATH = _os.path.join(_cur_dir, "Qwen3.5-0.8B")  # 本地 Qwen3.5 模型
-LORA_PATH = _os.path.join(_cur_dir, "outputs", "lora_adapter", "lora_adapter")  # LoRA 微调适配器路径
+LORA_PATH = _os.path.join(_cur_dir, "outputs_3090", "lora_adapter")  # RTX 3090 训练 LoRA 权重
 
 # 文本生成参数配置
 MAX_NEW_TOKENS = 256  # 最多生成的新 token 数，值越大回答越长但速度越慢
@@ -73,9 +73,14 @@ base_model = AutoModelForCausalLM.from_pretrained(
 print("加载 LoRA 适配器...")
 model = PeftModel.from_pretrained(base_model, LORA_PATH)
 
-# 4. 统一移动到 GPU + FP16
+# 4. 统一移动到 GPU + FP16 (如果显存不足则回退 CPU)
 if _device == "cuda":
-    model = model.to("cuda").half()
+    try:
+        model = model.to("cuda").half()
+    except (torch.cuda.OutOfMemoryError, RuntimeError) as e:
+        print(f"  ⚠️ GPU 显存不足，回退到 CPU: {e}")
+        model = model.to("cpu").float()
+        _device = "cpu"
 else:
     model = model.float()
 
