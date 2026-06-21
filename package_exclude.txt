@@ -1,0 +1,11 @@
+# 排除大文件
+Qwen3.5-0.8B/
+jiandanxinli_qa_data_v1.0.json
+joke_story_v0.1.json
+data/No-*.json
+data/No*.json
+data/multi_turn_qa.json
+__pycache__/
+*.pyc
+.git/
+package_exclude.txt

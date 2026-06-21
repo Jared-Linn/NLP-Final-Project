@@ -37,9 +37,11 @@
 │   └── templates/
 │
 ├── outputs/
-│   ├── lora_adapter/                  # LoRA 微调权重
-│   ├── inference_test_results.json    # 推理测试结果
-│   └── evaluation_report.json         # 模型评价报告
+│   ├── lora_adapter/                  # LoRA 微调权重（55MB）
+│   │   ├── checkpoint-76/             # 第76步checkpoint（含优化器状态）
+│   │   └── lora_adapter/              # 最终adapter权重
+│   ├── inference_test_results.json    # 推理测试结果（5KB）
+│   └── evaluation_report.json         # 模型评价报告（22KB）
 │
 ├── 计划表.md                          # 考核项↔文件映射追踪
 ├── requirements.txt                   # Python 依赖
@@ -123,14 +125,11 @@ python scripts/step8_evaluate.py      # [8] 模型评价
 - **文本去重**：MD5 content hash
 - **过短过滤**：<5字符丢弃
 
-清洗效果：30,877条 → **24,428条**保留（减少20.9%）
+清洗效果：jiandanxinli 30,877条→**24,428条**；psy525补充数据259,338条同步清洗；两份数据合并输出
 
 ### Step 3 — 分类+关键词提取
 
-对 `joke_story_v0.1.json` 抽样分类：
-- 调用 DeepSeek/豆包 API 或规则保底
-- 分类标签：`故事` / `笑话` / `诗歌` / `其他`
-- 每条提取 2 个关键词
+对 `joke_story_v0.1.json` 进行规则+API混合分类，覆盖前20,000条（占全量12%），API精分每类100条验证
 
 ### Step 4 — 跨文件融合（核心）
 
@@ -159,7 +158,7 @@ python scripts/step8_evaluate.py      # [8] 模型评价
 - **格式**：ChatML `<|im_start|>role\n内容<|im_end|>`
 - **label掩码**：仅 `assistant` 回复参与 loss 计算
 - **划分**：8:2 随机 → 1600 train / 400 test
-- **token长度**：平均395，最长1024
+- **token长度**：平均395，最长512（受GPU显存限制）
 
 ---
 
@@ -181,12 +180,12 @@ python scripts/step8_evaluate.py      # [8] 模型评价
 | 参数 | 值 |
 |------|-----|
 | 学习率 | 2e-4 |
-| 训练轮数 | 3 |
-| 批次大小 | 1（梯度累积4） |
+| 训练轮数 | 2 |
+| 批次大小 | 1（梯度累积4，GPU实测GTX1060 3GB） |
 | 优化器 | AdamW |
 | 损失函数 | CrossEntropyLoss |
 | 调度器 | Cosine |
-| 最大序列长度 | 1024 |
+| 最大序列长度 | 512（GPU显存适配） |
 
 ### 训练方式
 
@@ -216,10 +215,50 @@ python scripts/step8_evaluate.py      # [8] 模型评价
 | `jiandanxinli_qa_data_v1.0.json` | ~80 MB | 原始数据 | ❌ .gitignore |
 | `joke_story_v0.1.json` | ~194 MB | 原始数据 | ❌ .gitignore |
 | `data/No-*.json` | ~25-60 MB/个 | 原始数据 | ❌ .gitignore |
-| `data/fused/fused_dialogue.json` | ~5 MB | 处理后数据 | ❌ |
-| `data/split/train_chatml.json` | ~2 MB | 处理后数据 | ❌ |
-| `outputs/lora_adapter/` | ~8 MB | 训练输出 | ❌ |
-| `Qwen3.5-0.8B/` | ~1.6 GB | 模型文件 | ❌ .gitignore（建议） |
+| `data/cleaned/cleaned_data.json` | ~100 MB | 清洗后合并数据 | ❌ |
+| `data/classified/joke_story_classified.json` | ~12 MB | 分类+关键词 | ❌ |
+| `data/fused/fused_dialogue.json` | ~4 MB | 融合多轮对话 | ❌ |
+| `data/split/train_chatml.json` | ~3.3 MB | ChatML格式训练集 | ❌ |
+| `outputs/lora_adapter/` | ~55 MB | 训练输出（含checkpoint） | ❌ |
+
+*更新日期：2026/06/21 第二次完善*
+
+---
+
+## ✅ 实际训练结果
+
+### 训练设备
+
+| 项目 | 参数 |
+|------|------|
+| GPU | NVIDIA GeForce GTX 1060 3GB |
+| CUDA | 可用，启用 FP16 |
+| 训练数据 | 150条随机采样（1600条池），2轮 |
+| 训练耗时 | 约66分钟 |
+
+### Loss 收敛曲线（log_steps=5）
+
+| Step | Loss | 说明 |
+|------|------|------|
+| 1 | 4.43 | 初始起点 |
+| 35 | 3.40 | 快速下降阶段 |
+| 70 | 3.19 | 趋于收敛 |
+| 75 | 3.23 | 最终值 |
+
+Loss 从 **4.43** 降至 **3.19**，整体下降约 **28%**，收敛趋势明显。
+
+### 负面情绪联动测试
+
+| 测试项 | 结果 |
+|--------|------|
+| "最近很焦虑" → 推荐笑话 | 3/3 成功（100%） |
+| "工作压力大" → 安抚+故事 | 3/3 成功（100%） |
+
+### 产出路径
+
+- **LoRA权重**：`outputs/lora_adapter/`（含 checkpoint-76/ 和 lora_adapter/ 两份权重）
+- **推理测试**：`outputs/inference_test_results.json`
+- **评价报告**：`outputs/evaluation_report.json`
 
 ---
 
