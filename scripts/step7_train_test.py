@@ -18,11 +18,15 @@ MODEL_PATH = os.path.join(BASE_DIR, "Qwen3.5-0.8B")
 LORA_OUTPUT_DIR = os.path.join(BASE_DIR, "outputs", "lora_adapter")
 
 # ==================== 超参数 ====================
+# GPU 环境适配（GTX 1060 3GB）
 LEARNING_RATE = 2e-4
-NUM_EPOCHS = 5
+NUM_EPOCHS = 2  # GTX 1060 3GB：减少轮数加速
 BATCH_SIZE = 1
 GRADIENT_ACCUMULATION_STEPS = 4
-MAX_SEQ_LENGTH = 1024
+MAX_SEQ_LENGTH = 512  # GTX 1060 3GB适配：降低序列长度加速训练
+
+# 训练数据子集（0=使用全部数据）
+TRAIN_SUBSET = 150  # GTX 1060 3GB适配：150条子集随机采样，GPU约30-60分钟
 
 
 def print_divider(title):
@@ -113,7 +117,18 @@ def train_model():
         return False
 
     dataset = load_dataset("json", data_files={"train": data_path}, split="train")
-    print(f"  ✅ 数据集加载完成：{len(dataset)} 条")
+    total = len(dataset)
+    print(f"  ✅ 数据集加载完成：{total} 条")
+
+    # 随机采样子集（用于调试加速，0=全量训练）
+    if TRAIN_SUBSET > 0 and TRAIN_SUBSET < total:
+        import random
+        random.seed(42)
+        indices = sorted(random.sample(range(total), TRAIN_SUBSET))
+        dataset = dataset.select(indices)
+        print(f"  🔧 使用子集：从 {total} 条中随机采样 {TRAIN_SUBSET} 条")
+    else:
+        print(f"  ✅ 使用全部训练数据：{total} 条")
 
     # 5. 分词 + label 掩码
     print(f"  ⏳ 数据预处理...")
@@ -157,6 +172,29 @@ def train_model():
     )
     print(f"  ✅ 数据预处理完成")
 
+    # ---- 数据量统计 ----
+    num_samples = len(tokenized_dataset)
+    total_tokens = sum(len(ids) for ids in tokenized_dataset["input_ids"])
+    avg_len = total_tokens // num_samples if num_samples > 0 else 0
+    effective_batch_size = BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS
+    steps_per_epoch = (num_samples + effective_batch_size - 1) // effective_batch_size
+    total_steps = steps_per_epoch * NUM_EPOCHS
+
+    print(f"\n  📊 数据统计：")
+    print(f"     训练样本数：{num_samples}")
+    print(f"     总 token 数：{total_tokens}")
+    print(f"     平均序列长度：{avg_len}")
+    print(f"     等效批次大小：{effective_batch_size}")
+    print(f"     每轮步数：{steps_per_epoch}")
+    print(f"     总训练步数：~{total_steps}")
+
+    device_name, _ = get_device()
+    if device_name == "cpu":
+        print(f"  🕐 CPU 预估耗时：约 {max(1, total_steps // 3)}~{max(2, total_steps // 2)} 秒")
+        print(f"     （实际取决于 CPU 性能，建议首次调试用 TRAIN_SUBSET=50~100 快速验证）")
+    else:
+        print(f"  🕐 GPU 预估耗时：约 {max(1, total_steps // 20)}~{max(2, total_steps // 10)} 秒")
+
     # 6. 训练参数
     print(f"  ⏳ 配置训练参数...")
     training_args = TrainingArguments(
@@ -199,7 +237,14 @@ def train_model():
     print(f"  {'=' * 65}")
     print(f"  训练轮数：{NUM_EPOCHS}")
     print(f"  等效批次：{BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS}")
-    print(f"  总步数预估：{len(tokenized_dataset) // (BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS) * NUM_EPOCHS}")
+    print(f"  样本数：{len(tokenized_dataset)}")
+    total_steps = (len(tokenized_dataset) + BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS - 1) // (BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS) * NUM_EPOCHS
+    print(f"  总步数预估：{total_steps}")
+    device_name, _ = get_device()
+    if device_name == "cpu":
+        print(f"  🕐 CPU 训练中，请耐心等待（约 {max(1, total_steps // 3)}~{max(2, total_steps // 2)} 秒）")
+    else:
+        print(f"  🕐 GPU 训练中...（约 {max(1, total_steps // 20)}~{max(2, total_steps // 10)} 秒）")
 
     try:
         train_result = trainer.train()

@@ -1,5 +1,6 @@
 """
 模型加载器 - 单例模式，确保模型只加载一次
+支持 GPU (FP16) 和 CPU (FP32) 双模式
 """
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -21,18 +22,20 @@ class ModelLoader:
     def load_model(self, model_path):
         """
         加载模型（只会执行一次）
-
-        参数:
-            model_path (str): 合并后的模型路径
+        自动检测 GPU/CPU
         """
         if self._model is None:
             print("正在加载模型（首次加载，请稍候）...")
 
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            dtype = torch.float16 if device == "cuda" else torch.float32
+            print(f"  设备：{device.upper()} | 精度：{dtype}")
+
             # 加载模型
             self._model = AutoModelForCausalLM.from_pretrained(
                 model_path,
-                torch_dtype=torch.float32,
-                device_map="cpu",
+                torch_dtype=dtype,
+                device_map=device if device == "cuda" else "cpu",
                 trust_remote_code=True,
                 attn_implementation="eager",
             )

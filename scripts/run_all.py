@@ -8,6 +8,7 @@ import os
 import sys
 import subprocess
 import time
+sys.stdout.reconfigure(encoding='utf-8')
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS_DIR = os.path.join(BASE_DIR, "scripts")
@@ -43,10 +44,13 @@ def run_step(step_num, script_name, desc):
     print(f"  开始时间：{time.strftime('%H:%M:%S')}\n")
 
     start = time.time()
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
     result = subprocess.run(
         [sys.executable, script_path],
         capture_output=False,
         cwd=BASE_DIR,
+        env=env,
     )
     elapsed = time.time() - start
 

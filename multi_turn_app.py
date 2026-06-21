@@ -14,22 +14,27 @@
 - 避免在应用启动后才加载模型导致的超时问题
 """
 
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+
 import torch
 from fastapi import FastAPI, Request
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 from peft import PeftModel
-from model_loader import model_loader
 import os
 import multiprocessing
 
 # ==================== 配置参数 ====================
-# 模型路径配置
-BASE_MODEL_PATH = r"D:\dataset\model\Qwen3.5-0.8B"  # 基础预训练模型路径
-LORA_PATH = "./outputs_multi_turn/lora_adapter"  # LoRA 微调适配器路径
+# 模型路径配置（使用本地模型 + 训练好的 LoRA 权重）
+import os as _os
+_cur_dir = _os.path.dirname(_os.path.abspath(__file__))
+BASE_MODEL_PATH = _os.path.join(_cur_dir, "Qwen3.5-0.8B")  # 本地 Qwen3.5 模型
+LORA_PATH = _os.path.join(_cur_dir, "outputs", "lora_adapter", "lora_adapter")  # LoRA 微调适配器路径
 
 # 文本生成参数配置
 MAX_NEW_TOKENS = 256  # 最多生成的新 token 数，值越大回答越长但速度越慢
@@ -40,12 +45,7 @@ REPETITION_PENALTY = 1.1  # 重复惩罚：大于1会惩罚重复出现的词，
 # 默认系统角色（System Prompt）
 # 定义AI的身份、行为准则和回答风格
 # 用户可以在请求中覆盖此设置
-DEFAULT_SYSTEM_PROMPT = """你是一个友好、专业的AI助手，名叫小Q。
-你的特点：
-1. 回答简洁明了，易于理解
-2. 对于不懂的问题，诚实地说"我不知道"
-3. 保持积极、礼貌的语气
-4. 回答问题时有条理，分点说明"""
+DEFAULT_SYSTEM_PROMPT = """你是一位温暖专业的心理咨询师，善于倾听和共情。当来访者需要放松时，你会讲有趣的笑话或温暖的故事来安慰他们。"""
 
 # ==================== 第一步：加载模型 ====================
 # 在启动 FastAPI 之前先加载模型，确保模型加载成功后再启动服务
@@ -53,17 +53,36 @@ print("=" * 50)
 print("第一步：加载模型中...")
 print("=" * 50)
 
-# 1. 加载基础模型和分词器（通过自定义的 model_loader 单例）
-#    model_loader 使用单例模式，确保模型只加载一次，避免重复加载浪费内存
-base_model, tokenizer = model_loader.load_model(BASE_MODEL_PATH)
+# 1. 检测设备
+_device = "cuda" if torch.cuda.is_available() else "cpu"
+_dtype = torch.float16 if _device == "cuda" else torch.float32
+print(f"  设备：{_device.upper()} | 精度：{_dtype}")
 
-# 2. 加载 LoRA 适配器（微调得到的额外权重）
-#    PeftModel 将 LoRA 权重附加到基础模型上，实现参数高效微调
+# 2. 加载基础模型和分词器
+print("加载基础模型...")
+_tmp_tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_PATH, trust_remote_code=True)
+base_model = AutoModelForCausalLM.from_pretrained(
+    BASE_MODEL_PATH,
+    torch_dtype=_dtype,
+    device_map="cpu",  # 先全部放 CPU
+    trust_remote_code=True,
+    attn_implementation="eager",
+)
+
+# 3. 加载 LoRA
+print("加载 LoRA 适配器...")
 model = PeftModel.from_pretrained(base_model, LORA_PATH)
 
-# 3. 强制转换为 FP32 精度
-#    避免 CPU 上出现 bf16/f16 精度不支持的错误（如 oneDNN 报错）
-model = model.float()
+# 4. 统一移动到 GPU + FP16
+if _device == "cuda":
+    model = model.to("cuda").half()
+else:
+    model = model.float()
+
+# 5. 用临时 tokenizer 替换 model_loader 的 tokenizer
+tokenizer = _tmp_tokenizer
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
 
 print("✅ 模型加载完成！")
 print("=" * 50)
@@ -209,6 +228,8 @@ def generate_answer(question: str, history: List[dict], system_prompt: str) -> s
     # 2. 将文本编码为模型可理解的 token ID 序列
     #    return_tensors="pt" 表示返回 PyTorch 张量格式
     inputs = tokenizer(prompt, return_tensors="pt")
+    # 确保输入与模型在同一设备上
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
     # 3. 模型生成回答
     #    torch.no_grad() 禁用梯度计算，推理时不需要反向传播，可节省内存

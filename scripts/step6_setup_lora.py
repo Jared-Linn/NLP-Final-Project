@@ -85,7 +85,7 @@ def setup_training_params():
         # 学习率（LoRA 微调推荐 1e-4 ~ 5e-4）
         "learning_rate": 2e-4,
         # 训练轮数
-        "num_epochs": 5,
+        "num_epochs": 3,
         # 批次大小（CPU 设为1，GPU 可根据显存调整）
         "batch_size": 1,
         # 梯度累积步数（等效 batch = batch_size * grad_accum）

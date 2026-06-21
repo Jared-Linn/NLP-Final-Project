@@ -3,227 +3,428 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Qwen3.5 智能助手</title>
+    <title>Qwen3.5 智能助手 · 温暖对话</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
+        /* ========== Reset & Base ========== */
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        :root {
+            --bg: #F4EFEA;
+            --bg-warm: #F0EAE3;
+            --surface: #FFFFFF;
+            --surface-hover: #FCF9F6;
+            --accent: #7C6F64;
+            --accent-hover: #6B5F55;
+            --accent-light: #E8E2DB;
+            --text: #2B2825;
+            --text-soft: #8A8580;
+            --text-muted: #B0A89E;
+            --border: #E8E2DB;
+            --shadow-sm: 0 1px 3px rgba(124, 111, 100, 0.06), 0 1px 2px rgba(124, 111, 100, 0.04);
+            --shadow-md: 0 4px 16px rgba(124, 111, 100, 0.08), 0 2px 8px rgba(124, 111, 100, 0.04);
+            --shadow-lg: 0 8px 32px rgba(124, 111, 100, 0.10), 0 4px 12px rgba(124, 111, 100, 0.06);
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --transition: 400ms cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        html {
+            height: 100%;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 16px;
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            position: relative;
         }
 
-        /* 主容器 - 改为左右布局 */
+        /* Warm ambient noise overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 256px 256px;
+        }
+
+        /* Warm radial glow */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -40%;
+            right: -20%;
+            width: 800px;
+            height: 800px;
+            z-index: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(196, 168, 130, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        /* ========== App Container ========== */
         .app-container {
+            position: relative;
+            z-index: 1;
             width: 100%;
-            max-width: 1400px;
-            height: 85vh;
+            max-width: 1440px;
+            height: 90vh;
+            height: 90dvh;
             display: flex;
-            gap: 20px;
+            gap: 12px;
         }
 
-        /* 会话列表侧边栏 */
+        /* ========== Sidebar ========== */
         .session-sidebar {
             width: 280px;
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            flex-shrink: 0;
+            transition: transform var(--transition), opacity var(--transition);
         }
 
         .sidebar-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--border);
         }
 
         .sidebar-header h3 {
-            font-size: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-soft);
+            letter-spacing: 0.02em;
             margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sidebar-header h3 span {
+            font-size: 1rem;
         }
 
         .new-session-btn {
             width: 100%;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            color: white;
+            padding: 10px 16px;
+            background: var(--surface-hover);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--accent);
             cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
+            font-size: 0.8rem;
+            font-weight: 500;
+            font-family: inherit;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
         .new-session-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .new-session-btn:active {
+            transform: translateY(0);
         }
 
         .session-list {
             flex: 1;
             overflow-y: auto;
             padding: 12px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .session-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .session-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .session-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
         }
 
         .session-item {
-            padding: 12px;
-            border-radius: 12px;
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            margin-bottom: 8px;
-            transition: all 0.2s;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
+            margin-bottom: 6px;
+            transition: all var(--transition);
+            border: 1px solid transparent;
+            background: transparent;
+            position: relative;
         }
 
         .session-item:hover {
-            background: #e9ecef;
+            background: var(--surface-hover);
+            border-color: var(--border);
         }
 
         .session-item.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--surface-hover);
+            border-color: var(--accent-light);
+        }
+
+        .session-item.active::before {
+            content: '';
+            position: absolute;
+            left: -1px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 0 2px 2px 0;
         }
 
         .session-name {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: 500;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             word-break: break-all;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text);
+        }
+
+        .session-name .icon {
+            flex-shrink: 0;
+            font-size: 0.85rem;
+        }
+
+        .session-name .label {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .session-time {
-            font-size: 0.7rem;
-            opacity: 0.7;
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            margin-left: 22px;
         }
 
         .session-delete {
-            float: right;
-            opacity: 0.5;
+            opacity: 0;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: opacity var(--transition), background var(--transition);
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .session-item:hover .session-delete {
+            opacity: 0.6;
         }
 
         .session-delete:hover {
-            opacity: 1;
+            opacity: 1 !important;
+            background: rgba(0, 0, 0, 0.05);
         }
 
-        /* 聊天主区域 */
+        /* ========== Chat Container ========== */
         .chat-container {
             flex: 1;
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            min-width: 0;
         }
 
         .chat-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 24px;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-shrink: 0;
+            background: var(--surface);
         }
 
         .header-title h1 {
-            font-size: 1.4rem;
-            margin-bottom: 4px;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .header-title p {
-            font-size: 0.8rem;
-            opacity: 0.9;
+            font-size: 0.75rem;
+            color: var(--text-soft);
+            margin-top: 2px;
+            font-weight: 400;
         }
 
-        .session-info {
-            background: rgba(255, 255, 255, 0.15);
+        .header-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface-hover);
             padding: 6px 12px;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-family: monospace;
+            font-size: 0.72rem;
+            color: var(--text-soft);
+            border: 1px solid var(--border);
+            font-family: inherit;
         }
 
-        /* 系统角色设置面板 */
+        .header-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #7EC8A0;
+        }
+
+        /* ========== System Panel ========== */
         .system-panel {
-            background: #f0f0f0;
-            padding: 12px 20px;
-            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 24px;
+            background: var(--surface-hover);
+            border-bottom: 1px solid var(--border);
             display: flex;
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
+            flex-shrink: 0;
         }
 
         .system-panel label {
-            font-size: 0.85rem;
-            color: #666;
+            font-size: 0.78rem;
             font-weight: 500;
+            color: var(--text-soft);
+            white-space: nowrap;
         }
 
         .system-input {
             flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
+            min-width: 160px;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             outline: none;
             font-family: inherit;
+            background: var(--surface);
+            color: var(--text);
+            transition: border-color var(--transition), box-shadow var(--transition);
         }
 
         .system-input:focus {
-            border-color: #667eea;
+            border-color: var(--accent-light);
+            box-shadow: 0 0 0 3px rgba(124, 111, 100, 0.08);
+        }
+
+        .system-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn-ghost {
+            padding: 7px 16px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 500;
+            font-family: inherit;
+            transition: all var(--transition);
+            background: var(--surface);
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        .btn-ghost:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .btn-ghost:active {
+            transform: scale(0.97);
         }
 
         .system-hint {
-            font-size: 0.7rem;
-            color: #999;
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            white-space: nowrap;
         }
 
-        .btn-success {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            background: rgba(40, 167, 69, 0.8);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: rgba(40, 167, 69, 1);
-        }
-
+        /* ========== Chat Messages ========== */
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
-            background: #f8f9fa;
+            padding: 24px;
+            background: var(--surface);
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
         }
 
         .message {
             display: flex;
             margin-bottom: 20px;
-            animation: fadeIn 0.3s ease;
+            animation: messageIn 500ms cubic-bezier(0.32, 0.72, 0, 1) both;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message.user {
@@ -234,216 +435,340 @@
             justify-content: flex-start;
         }
 
+        .message-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            margin: 0 10px;
+            margin-top: 4px;
+        }
+
+        .user .message-avatar {
+            order: 2;
+            margin-right: 0;
+            margin-left: 10px;
+            background: var(--accent-light);
+        }
+
+        .assistant .message-avatar {
+            background: var(--bg);
+            border: 1px solid var(--border);
+        }
+
         .message-content {
-            max-width: 70%;
-            padding: 12px 16px;
-            border-radius: 20px;
-            line-height: 1.5;
+            max-width: 68%;
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            line-height: 1.6;
             word-wrap: break-word;
             white-space: pre-wrap;
+            font-size: 0.88rem;
         }
 
         .user .message-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--accent);
             color: white;
             border-bottom-right-radius: 4px;
         }
 
         .assistant .message-content {
-            background: white;
-            color: #333;
-            border: 1px solid #e0e0e0;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
             border-bottom-left-radius: 4px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-sm);
         }
 
-        .message-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+        .message-time {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-align: right;
+            padding: 0 2px;
+        }
+
+        .user .message-time {
+            text-align: right;
+        }
+
+        .assistant .message-time {
+            text-align: left;
+        }
+
+        /* ========== Chat Input ========== */
+        .chat-input-area {
+            padding: 16px 24px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            margin: 0 10px;
-            flex-shrink: 0;
-        }
-
-        .user .message-avatar {
-            order: 2;
-            background: #667eea;
-        }
-
-        .assistant .message-avatar {
-            background: #e9ecef;
-        }
-
-        .chat-input {
-            padding: 16px 20px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: flex-end;
+            flex-shrink: 0;
         }
 
         .input-wrapper {
             flex: 1;
+            position: relative;
         }
 
-        textarea {
+        .input-wrapper textarea {
             width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #e0e0e0;
-            border-radius: 24px;
-            font-size: 0.95rem;
+            padding: 12px 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 0.88rem;
             font-family: inherit;
             resize: none;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            background: var(--surface-hover);
+            color: var(--text);
+            line-height: 1.5;
         }
 
-        textarea:focus {
-            border-color: #667eea;
+        .input-wrapper textarea:focus {
+            border-color: var(--accent-light);
+            box-shadow: 0 0 0 3px rgba(124, 111, 100, 0.08);
+            background: var(--surface);
+        }
+
+        .input-wrapper textarea::placeholder {
+            color: var(--text-muted);
         }
 
         .send-btn {
             width: 44px;
             height: 44px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
             border-radius: 50%;
+            border: none;
             cursor: pointer;
+            background: var(--accent);
             color: white;
             font-size: 18px;
-            transition: transform 0.2s;
+            transition: all var(--transition);
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
         }
 
         .send-btn:hover {
+            background: var(--accent-hover);
             transform: scale(1.05);
         }
 
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
         .send-btn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
             transform: none;
         }
 
+        /* Arrow icon in button */
+        .send-btn .arrow-icon {
+            transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
+            display: inline-block;
+        }
+
+        .send-btn:hover .arrow-icon {
+            transform: translateX(1px) translateY(-1px);
+        }
+
+        /* ========== Typing Indicator ========== */
         .typing-indicator {
             display: flex;
-            gap: 4px;
-            padding: 12px 16px;
-            background: white;
-            border-radius: 20px;
-            border: 1px solid #e0e0e0;
-            width: 60px;
+            gap: 5px;
+            padding: 14px 18px;
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
         }
 
         .typing-indicator span {
             width: 8px;
             height: 8px;
-            background: #999;
+            background: var(--text-muted);
             border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out;
+            animation: typingBounce 1.4s ease-in-out infinite;
         }
 
         .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
         .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0s; }
 
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-6px); opacity: 1; }
         }
 
-        .chat-messages::-webkit-scrollbar {
-            width: 6px;
+        /* ========== Clear button ========== */
+        .clear-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-family: inherit;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all var(--transition);
         }
 
-        .chat-messages::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        .clear-btn:hover {
+            color: var(--text-soft);
+            background: var(--surface-hover);
         }
 
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 3px;
-        }
-
-        .session-list::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .session-list::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        .session-list::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 3px;
-        }
-
+        /* ========== Responsive ========== */
         @media (max-width: 800px) {
-            .app-container {
-                flex-direction: column;
+            body {
+                padding: 0;
             }
+
+            .app-container {
+                height: 100vh;
+                height: 100dvh;
+                flex-direction: column;
+                gap: 0;
+                border-radius: 0;
+            }
+
             .session-sidebar {
                 width: 100%;
-                height: 200px;
+                height: auto;
+                max-height: 45vh;
+                border-radius: 0;
+                box-shadow: none;
+                border-bottom: 1px solid var(--border);
+                flex-shrink: 0;
             }
+
+            .chat-container {
+                border-radius: 0;
+                box-shadow: none;
+                flex: 1;
+                min-height: 0;
+            }
+
+            .chat-header {
+                padding: 14px 16px;
+            }
+
+            .system-panel {
+                padding: 10px 16px;
+            }
+
+            .chat-messages {
+                padding: 16px;
+            }
+
             .message-content {
                 max-width: 85%;
+                font-size: 0.85rem;
+            }
+
+            .chat-input-area {
+                padding: 12px 16px;
+            }
+
+            .system-hint {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-title p {
+                display: none;
+            }
+            .header-badge {
+                font-size: 0.65rem;
+                padding: 4px 10px;
             }
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- 会话列表侧边栏 -->
+        <!-- ====== Sidebar ====== -->
         <div class="session-sidebar">
             <div class="sidebar-header">
-                <h3>💬 会话列表</h3>
-                <button class="new-session-btn" id="sidebarNewSessionBtn">➕ 新建会话</button>
+                <h3><span>💬</span> 会话列表</h3>
+                <button class="new-session-btn" id="sidebarNewSessionBtn">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="7" y1="1" x2="7" y2="13"/><line x1="1" y1="7" x2="13" y2="7"/></svg>
+                    新建会话
+                </button>
             </div>
             <div class="session-list" id="sessionList">
-                <div style="text-align: center; color: #999; padding: 20px;">加载中...</div>
+                <div style="text-align: center; color: var(--text-muted); padding: 24px 16px; font-size: 0.82rem;">加载中...</div>
             </div>
         </div>
 
-        <!-- 聊天主区域 -->
+        <!-- ====== Chat Main ====== -->
         <div class="chat-container">
+            <!-- Header -->
             <div class="chat-header">
                 <div class="header-title">
-                    <h1>🤖 Qwen3.5 智能助手</h1>
-                    <p>多轮对话 | 记忆上下文 | 可自定义角色</p>
+                    <h1>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2a10 10 0 0 1 10 10c0 5-3.5 9-10 10C5.5 22 2 17 2 12A10 10 0 0 1 12 2z"/>
+                            <path d="M8 10h.01M16 10h.01M9 16a4 4 0 0 0 6 0"/>
+                        </svg>
+                        Qwen3.5 智能助手
+                    </h1>
+                    <p>多轮对话 · 记忆上下文 · 可自定义角色</p>
                 </div>
-                <div class="session-info">
-                    📱 会话: <span id="sessionId">default</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="clear-btn" id="clearHistoryBtn" title="清空当前对话">清空记录</button>
+                    <div class="header-badge">
+                        <span class="dot"></span>
+                        <span id="sessionId">default</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- 系统角色设置面板 -->
+            <!-- System Role Panel -->
             <div class="system-panel">
-                <label>🎭 系统角色:</label>
+                <label>🎭 角色设定</label>
                 <input type="text" class="system-input" id="systemPromptInput"
-                       placeholder="设置AI的角色和行为，例如：你是一个专业的编程助手">
-                <button class="btn-success" id="updateSystemBtn">更新角色</button>
-                <span class="system-hint">💡 设置后AI将按照指定角色回答</span>
+                       placeholder="例如：你是一位专业的编程导师，温柔耐心">
+                <button class="btn-ghost" id="updateSystemBtn">更新</button>
+                <span class="system-hint">💡 设置后 AI 将按此角色回答</span>
             </div>
 
+            <!-- Messages -->
             <div class="chat-messages" id="chatMessages">
                 <div class="message assistant">
                     <div class="message-avatar">🤖</div>
                     <div class="message-content">
                         你好！我是 Qwen3.5 智能助手，有什么我可以帮助你的吗？
+                        <div class="message-time">刚刚</div>
                     </div>
                 </div>
             </div>
 
-            <div class="chat-input">
+            <!-- Input -->
+            <div class="chat-input-area">
                 <div class="input-wrapper">
-                    <textarea id="messageInput" placeholder="输入消息... (Enter 发送，Shift+Enter 换行)" rows="1"></textarea>
+                    <textarea id="messageInput" placeholder="输入消息…  (Enter 发送，Shift+Enter 换行)" rows="1"></textarea>
                 </div>
-                <button class="send-btn" id="sendBtn">➤</button>
+                <button class="send-btn" id="sendBtn">
+                    <span class="arrow-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                        </svg>
+                    </span>
+                </button>
             </div>
         </div>
     </div>
@@ -459,7 +784,7 @@
         // ==================== 全局变量 ====================
         let currentSessionId = "default";
         let currentSystemPrompt = "";
-        let sessionsList = [];  // 会话列表
+        let sessionsList = [];
 
         // ==================== DOM 元素 ====================
         const chatMessages = document.getElementById('chatMessages');
@@ -469,11 +794,12 @@
         const systemPromptInput = document.getElementById('systemPromptInput');
         const updateSystemBtn = document.getElementById('updateSystemBtn');
         const sessionListDiv = document.getElementById('sessionList');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
-        // ==================== API 调用函数 ====================
+        // ==================== API 调用 ====================
         async function sendMessage(question) {
             try {
-                const requestBody = { session_id: currentSessionId, question: question };
+                const requestBody = { session_id: currentSessionId, question };
                 if (currentSystemPrompt && currentSystemPrompt.trim()) {
                     requestBody.system_prompt = currentSystemPrompt;
                 }
@@ -554,10 +880,10 @@
             }
         }
 
-        // ==================== UI 操作函数 ====================
+        // ==================== UI 操作 ====================
         function renderSessionList() {
             if (sessionsList.length === 0) {
-                sessionListDiv.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无会话</div>';
+                sessionListDiv.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 24px 16px; font-size: 0.82rem;">暂无会话</div>';
                 return;
             }
 
@@ -566,31 +892,30 @@
                 const sessionDiv = document.createElement('div');
                 sessionDiv.className = `session-item ${sessionId === currentSessionId ? 'active' : ''}`;
 
-                // 格式化显示名称（取后8位或自定义）
-                const displayName = sessionId.length > 20 ? sessionId.substring(0, 18) + '...' : sessionId;
+                const displayName = sessionId.length > 22
+                    ? sessionId.substring(0, 20) + '…'
+                    : sessionId;
 
                 sessionDiv.innerHTML = `
                     <div class="session-name">
-                        <span class="session-delete" data-id="${sessionId}">🗑️</span>
-                        💬 ${displayName}
+                        <span class="icon">💬</span>
+                        <span class="label">${displayName}</span>
+                        <span class="session-delete" data-id="${sessionId}">✕</span>
                     </div>
                     <div class="session-time">${new Date().toLocaleDateString()}</div>
                 `;
 
-                // 点击切换会话
                 sessionDiv.addEventListener('click', (e) => {
                     if (e.target.classList.contains('session-delete')) return;
                     switchSession(sessionId);
                 });
 
-                // 删除按钮
                 const deleteBtn = sessionDiv.querySelector('.session-delete');
                 deleteBtn.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     if (confirm(`确定要删除会话 "${displayName}" 吗？`)) {
                         await deleteSession(sessionId);
                         if (sessionId === currentSessionId) {
-                            // 如果删除的是当前会话，切换到第一个会话或新建
                             const remaining = sessionsList.filter(s => s !== sessionId);
                             if (remaining.length > 0) {
                                 await switchSession(remaining[0]);
@@ -608,20 +933,20 @@
 
         async function switchSession(newSessionId) {
             currentSessionId = newSessionId;
-            sessionIdSpan.textContent = currentSessionId.length > 20 ?
-                currentSessionId.substring(0, 20) + '...' : currentSessionId;
+            sessionIdSpan.textContent = newSessionId.length > 22
+                ? newSessionId.substring(0, 20) + '…' : newSessionId;
 
-            // 清空聊天界面
             chatMessages.innerHTML = '';
             addMessage('assistant', '你好！我是 Qwen3.5 智能助手，有什么我可以帮助你的吗？');
 
-            // 获取会话信息
             await fetchSessionInfo();
 
-            // 高亮当前会话
             document.querySelectorAll('.session-item').forEach(el => {
                 el.classList.remove('active');
-                if (el.querySelector('.session-name')?.innerText.includes(currentSessionId.substring(0, 15))) {
+            });
+            document.querySelectorAll('.session-item').forEach(el => {
+                const label = el.querySelector('.label');
+                if (label && label.textContent.includes(currentSessionId.substring(0, 15))) {
                     el.classList.add('active');
                 }
             });
@@ -630,8 +955,8 @@
         async function createNewSession() {
             const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
             currentSessionId = newSessionId;
-            sessionIdSpan.textContent = currentSessionId.length > 20 ?
-                currentSessionId.substring(0, 20) + '...' : currentSessionId;
+            sessionIdSpan.textContent = newSessionId.length > 22
+                ? newSessionId.substring(0, 20) + '…' : newSessionId;
 
             currentSystemPrompt = "";
             systemPromptInput.value = "";
@@ -642,23 +967,23 @@
             await fetchSessionsList();
         }
 
-        async function handleClearCurrentHistory() {
-            if (confirm('确定要清空当前会话的历史记录吗？')) {
-                await clearHistory(currentSessionId);
-                chatMessages.innerHTML = '';
-                addMessage('assistant', '对话历史已清空！有什么我可以帮助你的吗？');
-            }
-        }
-
         function addMessage(role, content) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
+
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
             avatar.textContent = role === 'user' ? '👤' : '🤖';
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
             contentDiv.textContent = content;
+
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            contentDiv.appendChild(timeDiv);
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
@@ -686,7 +1011,7 @@
             if (indicator) indicator.remove();
         }
 
-        // ==================== 事件处理函数 ====================
+        // ==================== 事件处理 ====================
         async function handleSend() {
             const question = messageInput.value.trim();
             if (!question) return;
@@ -702,7 +1027,7 @@
             sendBtn.disabled = false;
             messageInput.disabled = false;
             messageInput.focus();
-            await fetchSessionsList();  // 刷新会话列表
+            await fetchSessionsList();
         }
 
         async function handleUpdateSystem() {
@@ -714,7 +1039,7 @@
             const success = await updateSystemPrompt(newSystemPrompt);
             if (success) {
                 currentSystemPrompt = newSystemPrompt;
-                addMessage('assistant', `🎭 系统角色已更新为: ${newSystemPrompt.substring(0, 100)}${newSystemPrompt.length > 100 ? '...' : ''}`);
+                addMessage('assistant', `🎭 系统角色已更新为: ${newSystemPrompt.substring(0, 100)}${newSystemPrompt.length > 100 ? '…' : ''}`);
             } else {
                 alert('更新系统角色失败');
             }
@@ -733,14 +1058,23 @@
             }
         });
         messageInput.addEventListener('input', autoResizeTextarea);
+
         sendBtn.addEventListener('click', handleSend);
         updateSystemBtn.addEventListener('click', handleUpdateSystem);
+
+        clearHistoryBtn.addEventListener('click', async () => {
+            if (confirm('确定要清空当前会话的历史记录吗？')) {
+                await clearHistory(currentSessionId);
+                chatMessages.innerHTML = '';
+                addMessage('assistant', '对话历史已清空！有什么我可以帮助你的吗？');
+            }
+        });
+
         document.getElementById('sidebarNewSessionBtn').addEventListener('click', async () => {
             await createNewSession();
             await fetchSessionsList();
         });
 
-        // 初始化
         messageInput.focus();
         fetchSessionsList();
         fetchSessionInfo();

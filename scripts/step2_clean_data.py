@@ -166,7 +166,7 @@ def clean_data(data):
 
 
 def count_ad_removal(data):
-    """统计完整记录级清洗（用于报表）"""
+    """统计完整记录级广告（用于报表）"""
     total = len(data)
     ad_in_title = 0
     ad_in_content = 0
@@ -180,29 +180,10 @@ def count_ad_removal(data):
     return total, ad_in_title, ad_in_content
 
 
-def main():
-    print("=" * 60)
-    print("  Step 2 — 脏数据清洗")
-    print("  考核项(2)-② 3%：剔除广告引流、无效社交话术、去重")
-    print("=" * 60)
-
-    # ========== 加载数据 ==========
-    # 数据集1：情感问答
-    fpath1 = os.path.join(BASE_DIR, "jiandanxinli_qa_data_v1.0.json")
-    with open(fpath1, "r", encoding="utf-8") as f:
-        data1 = json.load(f)
-    print(f"\n✅ 已加载情感问答数据：{len(data1)} 条原始记录")
-
-    # 补充分段检查广告情况
-    total, ad_title, ad_content = count_ad_removal(data1)
-    print(f"   其中含广告特征标题：{ad_title}条 | 含广告特征正文：{ad_content}条")
-
-    # ========== 执行清洗 ==========
-    print_divider("清洗进行中...")
-    cleaned_texts, stats, ad_samples, social_samples = clean_data(data1)
-
-    # ========== 打印统计 ==========
-    print_divider("清洗统计报告")
+def print_stats(stats, label=""):
+    """打印清洗统计表"""
+    if label:
+        print(f"\n  >>> {label}")
     print(f"  {'指标':<30} {'数量':<10} {'占比':<10}")
     print(f"  {'-' * 50}")
     print(f"  {'原始文本总条数':<30} {stats['total_original']:<10,} {'100%':<10}")
@@ -213,57 +194,174 @@ def main():
     print(f"  {'-' * 50}")
     print(f"  {'清洗后保留':<30} {stats['kept']:<10,} {stats['kept'] / max(stats['total_original'], 1) * 100:.1f}%")
 
-    # ========== 打印被删样本 ==========
-    if ad_samples:
-        print_divider("广告引流样本（前10条）")
-        for s in ad_samples:
-            print(f"  ❌ {s}")
 
-    if social_samples:
+def merge_stats(*stats_list):
+    """合并多个统计字典"""
+    merged = {k: 0 for k in stats_list[0]} if stats_list else {}
+    for s in stats_list:
+        for k in merged:
+            merged[k] += s.get(k, 0)
+    return merged
+
+
+def clean_record_level(item):
+    """对单条记录执行对话级清洗，返回清洗后的记录或 None"""
+    title = item.get("question_title", "")
+    content = item.get("question_content", "")
+
+    # 标题和正文都是广告 → 整条记录丢弃
+    if title and is_ad(title) and content and is_ad(content):
+        return None
+
+    new_answers = []
+    for answer in item.get("answers", []):
+        new_dialogs = []
+        for dialog in answer.get("dialogs", []):
+            text = dialog.get("content", "")
+            if text and not is_ad(text) and not is_invalid_social(text) and len(text.strip()) >= MIN_CONTENT_LENGTH:
+                new_dialogs.append(dialog)
+
+        if new_dialogs:
+            new_answer = dict(answer)
+            new_answer["dialogs"] = new_dialogs
+            new_answers.append(new_answer)
+
+    if not new_answers:
+        return None
+
+    new_item = dict(item)
+    new_item["answers"] = new_answers
+    return new_item
+
+
+def main():
+    print("=" * 60)
+    print("  Step 2 — 脏数据清洗")
+    print("  考核项(2)-② 3%：剔除广告引流、无效社交话术、去重")
+    print("  ⚡ 覆盖两份数据集：jiandanxinli + psy525")
+    print("=" * 60)
+
+    # ==================== 数据集1：jiandanxinli 情感问答 ====================
+    print_divider("数据集1：jiandanxinli_qa 情感问答")
+    fpath1 = os.path.join(BASE_DIR, "jiandanxinli_qa_data_v1.0.json")
+    with open(fpath1, "r", encoding="utf-8") as f:
+        data1 = json.load(f)
+    print(f"  已加载：{len(data1)} 条原始记录")
+
+    total, ad_title, ad_content = count_ad_removal(data1)
+    print(f"  含广告特征标题：{ad_title}条 | 含广告特征正文：{ad_content}条")
+
+    c1_texts, stats1, ad_samples1, social_samples1 = clean_data(data1)
+    print_stats(stats1, "jiandanxinli 清洗统计")
+
+    # ==================== 数据集2：psy525 补充数据 ====================
+    print_divider("数据集2：psy525 补充数据 (data/No-*.json)")
+    data_dir = os.path.join(BASE_DIR, "data")
+    psy525_cleaned_texts = []  # 所有 psy525 的清洗后文本
+    psy525_all_records = []    # 所有 psy525 原始记录
+    stats_list = []            # 各文件清洗统计列表
+    ad_samples_psy = []
+    social_samples_psy = []
+    psy525_file_count = 0
+    psy525_loaded = 0
+
+    # 查找 data/No-*.json 文件
+    no_files = sorted([f for f in os.listdir(data_dir) if re.match(r'^No-\d+\.json$', f)],
+                      key=lambda x: int(re.search(r'\d+', x).group()))
+    if not no_files:
+        print("  ⚠ 未找到 data/No-*.json 文件，跳过 psy525 数据集")
+    else:
+        print(f"  发现 {len(no_files)} 个 No-*.json 文件")
+
+        for fname in no_files:
+            fpath = os.path.join(data_dir, fname)
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    file_data = json.load(f)
+            except Exception as e:
+                print(f"  ⚠ 跳过 {fname}：读取失败 ({e})")
+                continue
+
+            if not isinstance(file_data, list) or len(file_data) == 0:
+                print(f"  ⚠ 跳过 {fname}：数据为空或非列表格式")
+                continue
+
+            psy525_file_count += 1
+            psy525_loaded += len(file_data)
+
+            # 执行清洗
+            texts, st, ad_s, soc_s = clean_data(file_data)
+
+            psy525_cleaned_texts.extend(texts)
+            psy525_all_records.extend(file_data)
+            stats_list.append(st)
+            ad_samples_psy.extend(ad_s)
+            social_samples_psy.extend(soc_s)
+
+            if psy525_file_count <= 3:
+                print(f"    {fname}: {len(file_data)} 条 → 保留 {st['kept']} 条文本")
+
+        if psy525_file_count > 3:
+            print(f"    ... 共处理 {psy525_file_count} 个文件 ({psy525_loaded:,} 条原始记录)")
+
+    # 合并 psy525 统计
+    if stats_list:
+        stats2 = merge_stats(*stats_list)
+        print_stats(stats2, "psy525 清洗统计（汇总）")
+    else:
+        stats2 = None
+        print("  psy525 数据集无数据，跳过")
+
+    # ========== 打印被删样本 ==========
+    all_ad_samples = ad_samples1 + ad_samples_psy[:10]
+    all_social_samples = social_samples1 + social_samples_psy[:10]
+
+    if all_ad_samples:
+        print_divider("广告引流样本（前10条）")
+        for s in all_ad_samples[:10]:
+            print(f"  [AD] {s}")
+
+    if all_social_samples:
         print_divider("无效社交样本（前10条）")
-        for s in social_samples:
-            print(f"  ❌ {s}")
+        for s in all_social_samples[:10]:
+            print(f"  [SOCIAL] {s}")
+
+    # ========== 合并全局统计 ==========
+    print_divider("两份数据集合并统计")
+    if stats2:
+        all_texts_combined = c1_texts + psy525_cleaned_texts
+        global_stats = merge_stats(stats1, stats2)
+        global_stats["kept"] = len(all_texts_combined)
+    else:
+        all_texts_combined = c1_texts
+        global_stats = stats1
+
+    print_stats(global_stats, "全局汇总")
 
     # ========== 保存清洗后数据 ==========
     output_path = os.path.join(BASE_DIR, "data", "cleaned", "cleaned_data.json")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    # 保存为清洗后记录（完整保留原始结构，只删掉被判定为脏数据的记录）
-    # 对原始记录级清洗：保留记录但不保留被清洗掉的对话轮次
+    # 构建保留的清洗后记录（保持原始结构）
     cleaned_records = []
     for item in data1:
-        qid = item.get("question_id", "")
-        title = item.get("question_title", "")
-        content = item.get("question_content", "")
+        cleaned = clean_record_level(item)
+        if cleaned is not None:
+            cleaned_records.append(cleaned)
 
-        # 跳过标题和正文都是广告的记录
-        if title and is_ad(title) and content and is_ad(content):
-            continue
-
-        new_answers = []
-        for answer in item.get("answers", []):
-            new_dialogs = []
-            for dialog in answer.get("dialogs", []):
-                text = dialog.get("content", "")
-                if text and not is_ad(text) and not is_invalid_social(text) and len(text.strip()) >= MIN_CONTENT_LENGTH:
-                    new_dialogs.append(dialog)
-
-            if new_dialogs:
-                new_answer = dict(answer)
-                new_answer["dialogs"] = new_dialogs
-                new_answers.append(new_answer)
-
-        if new_answers:
-            new_item = dict(item)
-            new_item["answers"] = new_answers
-            cleaned_records.append(new_item)
+    if psy525_all_records:
+        for item in psy525_all_records:
+            cleaned = clean_record_level(item)
+            if cleaned is not None:
+                cleaned_records.append(cleaned)
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(cleaned_records, f, ensure_ascii=False, indent=2)
 
-    print(f"\n💾 已保存清洗后数据：{output_path}")
-    print(f"   清洗前 {len(data1)} 条记录 → 清洗后 {len(cleaned_records)} 条记录")
-    print(f"\n✅ Step 2 完成。建议截图：以上清洗统计报告")
+    print(f"\n  已保存清洗后数据：{output_path}")
+    print(f"  数据源：jiandanxinli {len(data1)} 条 + psy525 {psy525_loaded} 条 = 合计 {psy525_loaded + len(data1)} 条记录")
+    print(f"  清洗后保留：{len(cleaned_records)} 条记录 ({len(all_texts_combined)} 条文本)")
+    print(f"\n✅ Step 2 完成。建议截图：以上两份清洗统计报告及合并统计")
 
 
 if __name__ == "__main__":

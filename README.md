@@ -181,7 +181,7 @@ python scripts/step8_evaluate.py      # [8] 模型评价
 | 参数 | 值 |
 |------|-----|
 | 学习率 | 2e-4 |
-| 训练轮数 | 5 |
+| 训练轮数 | 3 |
 | 批次大小 | 1（梯度累积4） |
 | 优化器 | AdamW |
 | 损失函数 | CrossEntropyLoss |
