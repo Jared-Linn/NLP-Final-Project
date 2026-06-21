@@ -103,6 +103,12 @@ python scripts/step7_train_test.py    # [7] 训练+测试
 python scripts/step8_evaluate.py      # [8] 模型评价
 ```
 
+### 云端训练 (RTX 3090)
+1. SSH 连接到 GPU 服务器
+2. 上传项目代码
+3. 下载模型: `python -c "from transformers import AutoModelForCausalLM; AutoModelForCausalLM.from_pretrained('Qwen/Qwen3.5-0.8B')"`
+4. 运行: `python scripts/run_all.py`
+
 ---
 
 ## 🔬 数据处理流水线详情
@@ -180,8 +186,8 @@ python scripts/step8_evaluate.py      # [8] 模型评价
 | 参数 | 值 |
 |------|-----|
 | 学习率 | 2e-4 |
-| 训练轮数 | 2 |
-| 批次大小 | 1（梯度累积4，GPU实测GTX1060 3GB） |
+| 训练轮数 | 3 |
+| 批次大小 | 1（梯度累积4，GPU实测RTX3090 24GB） |
 | 优化器 | AdamW |
 | 损失函数 | CrossEntropyLoss |
 | 调度器 | Cosine |
@@ -225,40 +231,36 @@ python scripts/step8_evaluate.py      # [8] 模型评价
 
 ---
 
-## ✅ 实际训练结果
+## ✅ RTX 3090 云端训练结果 (2026/06/21)
 
-### 训练设备
+| 指标 | 值 |
+|------|-----|
+| 训练设备 | NVIDIA RTX 3090 24GB (创投云) |
+| 精度 | BF16 |
+| 训练数据 | 1600 条（全量随机打乱） |
+| 训练轮数 | 3 |
+| 总步数 | 1200 |
+| 等效批次 | 4 |
+| 训练耗时 | ~56 分钟 (3373秒) |
+| 速度 | 2.81 秒/步, 1.42 样本/秒 |
+| 初始 Loss | 4.349 |
+| 最终 Loss | 3.079 |
+| Loss 降幅 | 29.2% |
+| 负面情绪联动 | 3/3 (100%) |
 
-| 项目 | 参数 |
-|------|------|
-| GPU | NVIDIA GeForce GTX 1060 3GB |
-| CUDA | 可用，启用 FP16 |
-| 训练数据 | 150条随机采样（1600条池），2轮 |
-| 训练耗时 | 约66分钟 |
+**Loss 收敛**：
+- Step 1: 4.35 → Step 50: 3.19 → Step 100: 3.13
+- Step 200: 2.91 → Step 400: 2.72 → Step 600: 2.76
+- Step 800: 2.72 → Step 1000: 2.62 → Step 1200: 2.97
+- train_loss: **3.079**
 
-### Loss 收敛曲线（log_steps=5）
-
-| Step | Loss | 说明 |
-|------|------|------|
-| 1 | 4.43 | 初始起点 |
-| 35 | 3.40 | 快速下降阶段 |
-| 70 | 3.19 | 趋于收敛 |
-| 75 | 3.23 | 最终值 |
-
-Loss 从 **4.43** 降至 **3.19**，整体下降约 **28%**，收敛趋势明显。
-
-### 负面情绪联动测试
-
-| 测试项 | 结果 |
-|--------|------|
-| "最近很焦虑" → 推荐笑话 | 3/3 成功（100%） |
-| "工作压力大" → 安抚+故事 | 3/3 成功（100%） |
-
-### 产出路径
-
-- **LoRA权重**：`outputs/lora_adapter/`（含 checkpoint-76/ 和 lora_adapter/ 两份权重）
-- **推理测试**：`outputs/inference_test_results.json`
-- **评价报告**：`outputs/evaluation_report.json`
+**与 GTX 1060 对比**：
+| 指标 | GTX 1060 3GB | RTX 3090 24GB |
+|------|:---:|:---:|
+| 速度 | ~50s/步 | 2.81s/步 (快18倍) |
+| 训练数据 | 150条/2轮 | 1600条/3轮 |
+| 耗时 | 66分钟 | 56分钟 |
+| 最终Loss | 3.60 | 3.08 |
 
 ---
 
