@@ -58,3 +58,8 @@ Thumbs.db
 
 # ==================== 调试文件 ====================
 joke_sample_debug.txt
+
+# ==================== 云端输出 ====================
+outputs_cloud/
+project_v3_cloud.tar.gz
+*.tar.gz
