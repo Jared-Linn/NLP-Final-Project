@@ -7,6 +7,11 @@ echo "============================================"
 echo "  灵犀 — 云端全量训练"
 echo "============================================"
 
+# 0. 强制离线模式（新版 transformers 需要）
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+echo "[0/6] 已启用离线模式 (HF_HUB_OFFLINE=1)"
+
 # 1. 环境检查
 echo "[1/6] 检查环境..."
 python3 -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0)}')"

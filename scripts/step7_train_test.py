@@ -7,6 +7,10 @@ Step 7 — 模型训练与推理测试（考核项4，10%）
 
 此脚本先检查是否有已保存的 LoRA 权重。有则跳过训练直接测试。
 """
+import os
+# 强制离线模式：防止新版 transformers 把本地路径当 repo_id 校验
+os.environ.setdefault('HF_HUB_OFFLINE', '1')
+os.environ.setdefault('TRANSFORMERS_OFFLINE', '1')
 import json
 import os
 import sys
