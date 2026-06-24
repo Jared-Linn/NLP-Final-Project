@@ -178,31 +178,26 @@ def chart_gen_test_report(report_path, output_path):
     print(f'  [OK] {os.path.basename(output_path)}')
 
 def chart_speed_comparison(output_path):
-    """GTX 1060 vs RTX 3090 vs RTX 4090D 训练速度对比"""
-    labels = ['Speed\n(s/step)', 'Train\nSamples', 'Epochs', 'Final\nLoss']
-    gtx = [50, 150, 2, 4.3]       # GTX 1060 本地
-    rtx3090 = [2.81, 1600, 3, 3.08]  # RTX 3090 云端
-    rtx4090d = [1.27, 8000, 3, 2.79]  # RTX 4090D 云端
-
+    """GTX 1060 vs RTX 4090D 训练对比"""
     fig, axes = plt.subplots(1, 4, figsize=(14, 4.5))
 
     comparisons = [
-        ('Training Speed (s/step)\nLower = Better', [50, 2.81, 1.27]),
-        ('Training Samples\nMore = Better', [150, 1600, 8000]),
-        ('Training Epochs', [2, 3, 3]),
-        ('Final Loss\nLower = Better', [4.3, 3.08, 2.79]),
+        ('Training Speed (s/step)\nLower = Better', [50, 1.27]),
+        ('Training Samples\nMore = Better', [150, 8000]),
+        ('Training Epochs', [2, 3]),
+        ('Final Loss\nLower = Better', [4.3, 2.79]),
     ]
 
     for i, (title, values) in enumerate(comparisons):
         ax = axes[i]
-        bars = ax.bar(['GTX 1060', 'RTX 3090', 'RTX 4090D'], values,
-                       color=['#fc8d59', '#2c7bb6', '#33a02c'])
+        bars = ax.bar(['GTX 1060', 'RTX 4090D'], values,
+                       color=['#fc8d59', '#33a02c'])
         ax.set_title(title, fontsize=10, fontweight='bold')
         for bar, val in zip(bars, values):
             ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(values)*0.03,
                     str(val), ha='center', fontsize=10, fontweight='bold')
 
-    fig.suptitle('Training Comparison: GTX 1060 vs RTX 3090 vs RTX 4090D', fontsize=14, fontweight='bold')
+    fig.suptitle('Training Comparison: GTX 1060 (Local) vs RTX 4090D (Cloud)', fontsize=14, fontweight='bold')
     fig.tight_layout()
     fig.savefig(output_path)
     plt.close(fig)
@@ -212,10 +207,10 @@ def chart_training_time_comparison(output_path):
     """训练耗时对比"""
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    gpus = ['GTX 1060\n(Local)', 'RTX 3090\n(创投云)', 'RTX 4090D\n(AutoDL)']
-    times_min = [50, 56, 270]  # minutes
-    samples = [150, 1600, 8000]
-    colors = ['#fc8d59', '#2c7bb6', '#33a02c']
+    gpus = ['GTX 1060\n(Local)', 'RTX 4090D\n(AutoDL)']
+    times_min = [50, 270]  # minutes
+    samples = [150, 8000]
+    colors = ['#fc8d59', '#33a02c']
 
     bars = ax.bar(gpus, times_min, color=colors, width=0.5, edgecolor='white', linewidth=0.5)
     for bar, t, s in zip(bars, times_min, samples):

@@ -34,7 +34,7 @@ import multiprocessing
 import os as _os
 _cur_dir = _os.path.dirname(_os.path.abspath(__file__))
 BASE_MODEL_PATH = _os.path.join(_cur_dir, "Qwen3.5-0.8B")  # 本地 Qwen3.5 模型
-LORA_PATH = _os.path.join(_cur_dir, "outputs_3090", "lora_adapter")  # RTX 3090 训练 LoRA 权重
+LORA_PATH = _os.path.join(_cur_dir, "outputs_cloud", "lora_adapter")  # RTX 4090D 云端训练 LoRA 权重
 
 # 文本生成参数配置
 MAX_NEW_TOKENS = 256  # 最多生成的新 token 数，值越大回答越长但速度越慢

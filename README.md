@@ -39,33 +39,7 @@
   <img src="outputs_cloud/charts/grad_norm_4090.png" width="48%" alt="Grad Norm 4090">
 </p>
 
-### v2 训练图表（RTX 3090 · 1,600 样本）
-
-<p align="center">
-  <img src="outputs_3090/charts/loss_curve.png" width="48%" alt="Loss Curve">
-  <img src="outputs_3090/charts/loss_and_lr.png" width="48%" alt="Loss & LR">
-</p>
-
-<p align="center">
-  <img src="outputs_3090/charts/speed_comparison.png" width="48%" alt="Speed">
-  <img src="outputs_3090/charts/grad_norm.png" width="48%" alt="Grad Norm">
-</p>
-
-### v2 (旧 · RTX 3090)
-
-| 指标 | 值 |
-|------|-----|
-| 训练设备 | NVIDIA RTX 3090 24GB (创投云) |
-| 精度 | BF16 |
-| 训练数据 | 1,600 条（单一推荐模板） |
-| 训练轮数 | 3 |
-| 总步数 | 1,200 |
-| 训练耗时 | **~56 分钟** (3,373 秒) |
-| Initial Loss | 4.349 |
-| Final Loss | **3.079** (↓29.2%) |
-| 泛化能力 | ❌ 100% 强制推荐 |
-
-### v3 (新 · RTX 4090D 24GB 云端) ⭐
+### v3 训练指标（RTX 4090D · 8,000 样本）⭐
 
 | 指标 | 值 |
 |------|-----|
@@ -78,19 +52,9 @@
 | 训练耗时 | **~4.5 小时** (16,220 秒) |
 | 速度 | 1.27 秒/步 · 1.48 样本/秒 |
 | Final Loss | **2.79** |
-| 泛化能力 | ✅ 40-60% 纯共情回复 |
-
-### 训练对比
-
-| 指标 | v2 (RTX 3090) | v3 (RTX 4090D) |
-|------|:---:|:---:|
-| 训练数据 | 1,600 条 | 8,000 条 |
-| 对话模式 | 1 种 | 5 种 |
-| 耗时 | 56 分钟 | 4.5 小时 |
-| 最终 Loss | 3.08 | 2.79 |
-| 纯共情率 | 0% | **40-60%** |
-| 直接索要通过率 | - | **100%** |
-| 话题切换通过率 | - | **100%** |
+| 纯共情率 | **40-60%** |
+| 直接索要通过率 | **100%** |
+| 话题切换通过率 | **100%** |
 
 ---
 
@@ -99,11 +63,6 @@
 <p align="center">
   <img src="outputs_cloud/charts/gen_test_report_4090.png" width="48%" alt="泛化测试报告">
   <img src="outputs_cloud/charts/training_time_4090.png" width="48%" alt="训练耗时对比">
-</p>
-
-<p align="center">
-  <img src="outputs_3090/charts/eval_comparison.png" width="48%" alt="微调前后对比">
-  <img src="outputs_3090/charts/bleu_rouge.png" width="48%" alt="BLEU/ROUGE">
 </p>
 
 | 维度 | 评分方法 | 说明 |
@@ -139,16 +98,15 @@
 │   └── run_all.py                      # 一键全流程
 ├── outputs/                            # 本地训练输出
 │   └── lora_adapter/                   # LoRA 权重
-├── outputs_3090/                       # RTX 3090 训练输出
+├── outputs_cloud/                      # 云端训练输出 (RTX 4090D)
+│   ├── charts/                         # 训练图表 (6 张)
 │   ├── lora_adapter/                   # LoRA 权重 (4.2MB)
-│   ├── charts/                         # 训练图表 (7 张)
-│   ├── training_full.log               # 完整训练日志
-│   └── evaluation_report.json          # 评价报告
+│   └── train_output.log                # 完整训练日志
 ├── templates/
 │   └── index.html                      # 聊天界面 UI
 ├── tools/                              # 开发辅助工具
 ├── multi_turn_app.py                   # Web 服务主程序
-├── generate_charts.py                  # 图表生成脚本
+├── generate_charts_4090.py             # 图表生成脚本
 ├── 实验报告.md                         # 正式考核报告
 ├── README.md                           # 本文档
 └── requirements.txt                    # Python 依赖
@@ -213,16 +171,16 @@ python multi_turn_app.py
 
 ## 训练超参数
 
-| 参数 | v2 (RTX 3090) | v3 (RTX 4090D) |
-|------|:---:|:---:|
-| 学习率 | 2e-4 | 2e-4 |
-| 训练轮数 | 3 | 3 |
-| 批次大小 | 1（梯度累积 4，等效批次 4） | 1（梯度累积 2，等效批次 2） |
-| 优化器 | AdamW | AdamW |
-| 损失函数 | CrossEntropyLoss（label masking） | CrossEntropyLoss（label masking） |
-| 调度器 | Cosine 退火 | Cosine 退火 |
-| 最大序列长度 | 512 | 2,048 |
-| 训练/测试 | 8:2 (1,600/400) | 8:2 (8,000/2,000) |
+| 参数 | 值 |
+|------|-----|
+| 学习率 | 2e-4 |
+| 训练轮数 | 3 |
+| 批次大小 | 1（梯度累积 2，等效批次 2） |
+| 优化器 | AdamW |
+| 损失函数 | CrossEntropyLoss（label masking） |
+| 调度器 | Cosine 退火 |
+| 最大序列长度 | 2,048 |
+| 训练/测试 | 8:2 (8,000/2,000) |
 
 ---
 

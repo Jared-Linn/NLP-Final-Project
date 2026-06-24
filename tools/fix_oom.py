@@ -4,7 +4,7 @@ with open("/root/scripts/step7_train_test.py", "r") as f:
 # Fix 1: padding back to False (DataCollator handles dynamic padding for batch_size=1)
 code = code.replace("padding='max_length'", "padding=False")
 
-# Fix 2: batch_size=1, grad_accum=4 (safe for 3090, effective batch=4)
+# Fix 2: batch_size=1, grad_accum=4 (safe for 4090D, effective batch=4)
 import re
 code = re.sub(r"BATCH_SIZE = \d+.*", "BATCH_SIZE = 1  # safe for OOM", code)
 code = re.sub(r"GRADIENT_ACCUMULATION_STEPS = \d+.*", "GRADIENT_ACCUMULATION_STEPS = 4", code)
