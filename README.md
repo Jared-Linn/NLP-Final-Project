@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Model-Qwen3.5--0.8B-blue?style=flat-square" alt="Model">
   <img src="https://img.shields.io/badge/Fine--tune-LoRA-green?style=flat-square" alt="LoRA">
-  <img src="https://img.shields.io/badge/GPU-RTX%203090%2024GB-red?style=flat-square" alt="GPU">
+  <img src="https://img.shields.io/badge/GPU-RTX%204090D%2024GB-red?style=flat-square" alt="GPU">
   <img src="https://img.shields.io/badge/Framework-FastAPI%20%2B%20Uvicorn-teal?style=flat-square" alt="Framework">
   <img src="https://img.shields.io/badge/PyTorch-2.8.0%2Bcu128-orange?style=flat-square" alt="PyTorch">
 </p>
@@ -26,6 +26,20 @@
 ---
 
 ## 📊 训练结果
+
+### v3 训练图表（RTX 4090D · 8,000 样本）⭐
+
+<p align="center">
+  <img src="outputs_cloud/charts/loss_curve_4090.png" width="48%" alt="Loss Curve 4090">
+  <img src="outputs_cloud/charts/loss_and_lr_4090.png" width="48%" alt="Loss & LR 4090">
+</p>
+
+<p align="center">
+  <img src="outputs_cloud/charts/speed_comparison_4090.png" width="48%" alt="Speed Compare">
+  <img src="outputs_cloud/charts/grad_norm_4090.png" width="48%" alt="Grad Norm 4090">
+</p>
+
+### v2 训练图表（RTX 3090 · 1,600 样本）
 
 <p align="center">
   <img src="outputs_3090/charts/loss_curve.png" width="48%" alt="Loss Curve">
@@ -83,12 +97,13 @@
 ## 📈 模型评价
 
 <p align="center">
-  <img src="outputs_3090/charts/eval_comparison.png" width="48%" alt="微调前后对比">
-  <img src="outputs_3090/charts/bleu_rouge.png" width="48%" alt="BLEU/ROUGE">
+  <img src="outputs_cloud/charts/gen_test_report_4090.png" width="48%" alt="泛化测试报告">
+  <img src="outputs_cloud/charts/training_time_4090.png" width="48%" alt="训练耗时对比">
 </p>
 
 <p align="center">
-  <img src="outputs_3090/charts/emotion_distribution.png" width="48%" alt="情感分布">
+  <img src="outputs_3090/charts/eval_comparison.png" width="48%" alt="微调前后对比">
+  <img src="outputs_3090/charts/bleu_rouge.png" width="48%" alt="BLEU/ROUGE">
 </p>
 
 | 维度 | 评分方法 | 说明 |
@@ -198,16 +213,16 @@ python multi_turn_app.py
 
 ## 训练超参数
 
-| 参数 | 值 |
-|------|-----|
-| 学习率 | 2e-4 |
-| 训练轮数 | 3 |
-| 批次大小 | 1（梯度累积 4，等效批次 4） |
-| 优化器 | AdamW |
-| 损失函数 | CrossEntropyLoss（label masking） |
-| 调度器 | Cosine 退火 |
-| 最大序列长度 | 512 |
-| 训练/测试 | 8:2 (1600/400) |
+| 参数 | v2 (RTX 3090) | v3 (RTX 4090D) |
+|------|:---:|:---:|
+| 学习率 | 2e-4 | 2e-4 |
+| 训练轮数 | 3 | 3 |
+| 批次大小 | 1（梯度累积 4，等效批次 4） | 1（梯度累积 2，等效批次 2） |
+| 优化器 | AdamW | AdamW |
+| 损失函数 | CrossEntropyLoss（label masking） | CrossEntropyLoss（label masking） |
+| 调度器 | Cosine 退火 | Cosine 退火 |
+| 最大序列长度 | 512 | 2,048 |
+| 训练/测试 | 8:2 (1,600/400) | 8:2 (8,000/2,000) |
 
 ---
 
@@ -224,11 +239,11 @@ python multi_turn_app.py
     ├─③ step3_classify ──── 笑话/故事/诗歌/其他 四类
     │                        + 关键词提取 (20,000 条)
     │
-    ├─④ step4_fusion ────── 四轮对话构造 (2,000 条)
-    │                       情感倾诉→共情回复→索要→故事/笑话
+    ├─④ step4_fusion ────── 多模式对话构造 (8,000 条)
+    │                       5种模式：推荐/纯共情/拒绝/短对话/长对话
     │
     ├─⑤ step5_tokenize ──── ChatML 格式 + label masking
-    │                       1600 train / 400 test
+    │                       8000 train / 2000 test
     │
     ├─⑥ step6_setup_lora ── LoRA 结构搭建
     │
@@ -301,8 +316,8 @@ python multi_turn_app.py
 - **服务**：FastAPI + Uvicorn + Jinja2
 - **图表**：Matplotlib (Microsoft YaHei)
 - **数据**：Python · JSON · Regex
-- **云端**：创投云 RTX 3090 24GB
+- **云端**：AutoDL RTX 4090D 24GB
 
 ---
 
-*最后更新：2026 年 6 月 21 日*
+*最后更新：2026 年 6 月 24 日*

@@ -60,6 +60,7 @@ Thumbs.db
 joke_sample_debug.txt
 
 # ==================== 云端输出 ====================
-outputs_cloud/
+outputs_cloud/*
+!outputs_cloud/charts/
 project_v3_cloud.tar.gz
 *.tar.gz
