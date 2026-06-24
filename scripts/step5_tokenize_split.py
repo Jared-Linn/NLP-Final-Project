@@ -74,6 +74,26 @@ def main():
         dialogues = json.load(f)
     print(f"\n✅ 已加载融合对话：{len(dialogues)} 条")
 
+    # ========== 1.5 加载真实多轮对话（提升数据多样性）==========
+    real_dialogue_path = os.path.join(BASE_DIR, "data", "multi_turn_qa.json")
+    real_dialogues = []
+    if os.path.exists(real_dialogue_path):
+        with open(real_dialogue_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        real_dialogues.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+        # 随机采样 2000 条真实对话混入（丰富数据多样性）
+        if len(real_dialogues) > 2000:
+            random.shuffle(real_dialogues)
+            real_dialogues = real_dialogues[:2000]
+        print(f"✅ 已加载真实多轮对话：{len(real_dialogues)} 条（混入训练集提升多样性）")
+    else:
+        print(f"  ⚠️ 未找到真实对话数据，请先运行 multi_turn_prepare_data.py")
+
     # ========== 2. 统一 ChatML 格式 ==========
     print_divider("统一 ChatML 格式")
     chatml_data = []
@@ -84,7 +104,18 @@ def main():
             "emotion": d.get("emotion", "日常"),
             "category": d.get("category", "其他"),
         })
-    print(f"✅ 已转换 {len(chatml_data)} 条 ChatML 格式对话")
+
+    # 混入真实对话（已经是 ChatML 文本格式）
+    for d in real_dialogues:
+        chatml_data.append({
+            "text": d.get("text", ""),
+            "emotion": "日常",
+            "category": "其他",
+        })
+
+    # 打乱混合数据，避免模板对话和真实对话分开聚集
+    random.shuffle(chatml_data)
+    print(f"✅ 已转换 {len(chatml_data)} 条 ChatML 格式对话（含 {len(dialogues)} 模板 + {len(real_dialogues)} 真实）")
 
     # 打印一条示例
     print(f"\n📝 ChatML 格式示例（前 300 字符）：")

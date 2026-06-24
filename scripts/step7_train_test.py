@@ -26,7 +26,7 @@ GRADIENT_ACCUMULATION_STEPS = 4
 MAX_SEQ_LENGTH = 512  # GTX 1060 3GB适配：降低序列长度加速训练
 
 # 训练数据子集（0=使用全部数据）
-TRAIN_SUBSET = 150  # GTX 1060 3GB适配：150条子集随机采样，GPU约30-60分钟
+TRAIN_SUBSET = 300  # GTX 1060 3GB：300条覆盖3种对话模式，GPU约1.5-2小时
 
 
 def print_divider(title):

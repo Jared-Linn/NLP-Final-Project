@@ -19,8 +19,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 融合对话数上限
-MAX_FUSED_DIALOGUES = 2000
+# 融合对话数上限（大幅提升以覆盖多种对话模式）
+MAX_FUSED_DIALOGUES = 8000
 
 # 情感类别映射：从咨询数据中识别情感倾向 → 匹配的故事/笑话类别
 EMOTION_KEYWORDS = {
@@ -175,6 +175,153 @@ USER_ASK_PHRASES = [
 ]
 
 
+# ====== 新增：纯共情模板（不推荐故事/笑话，只做心理咨询） ======
+EMPATHY_NO_RECOMMEND = {
+    "焦虑": [
+        "我能感受到你的焦虑，这种感觉真的很不好受。你愿意多说说是哪些事情让你这么紧张吗？",
+        "焦虑的时候有人倾听就很重要。我在，你慢慢说。",
+        "试试深呼吸，把注意力放在当下。你能描述一下现在最让你担心的是什么吗？",
+        "压力确实会让人透不过气。你平时有什么方式可以让自己稍微放松一点吗？",
+    ],
+    "抑郁": [
+        "我听到你的难过了，这种感受很真实。你愿意跟我多聊聊吗？",
+        "你愿意把这些说出来已经很勇敢了。这种感觉持续多久了？",
+        "低落的时候，也许不需要急着走出来，我们可以先聊聊。",
+        "我在这里陪着你。你想说说最近发生了什么事吗？",
+    ],
+    "人际": [
+        "和别人相处确实有时候会让人觉得很累。你想聊聊具体是什么情况吗？",
+        "孤独的感觉我懂。你是希望交到更多朋友，还是对现有的关系有些困扰？",
+        "人际关系常常是最消耗心力的。能和我说说让你不舒服的是什么吗？",
+    ],
+    "家庭": [
+        "家人之间的冲突真的特别让人难受。你想多说说发生了什么吗？",
+        "和家人闹矛盾的时候心里一定很委屈，我在这儿听你说。",
+        "家本该是最温暖的地方，有时候却让人最受伤。你愿意多聊聊吗？",
+    ],
+    "职场": [
+        "工作压力确实让人喘不过气。你愿意具体说说是什么情况吗？",
+        "每天都在为了工作奔波，真的很不容易。你最近遇到什么困难了？",
+        "职场里的很多事都身不由己，我理解你的感受。",
+    ],
+    "学业": [
+        "学业上的压力确实很磨人。你最近在备考什么？",
+        "学习这条路有时候真的会让人很迷茫，你觉得自己现在最大的困难是什么？",
+        "成绩起伏很正常，重要的是你没有放弃。你愿意多聊聊吗？",
+    ],
+    "日常": [
+        "谢谢你愿意跟我分享这些。还有什么想聊聊的吗？",
+        "我在这儿听你说，你尽管说吧。",
+        "每种情绪都值得被认真对待，你想继续聊聊吗？",
+    ],
+}
+
+# ====== 新增：用户继续倾诉语（替代索要故事/笑话） ======
+USER_CONTINUE_PHRASES = [
+    "我也不知道该怎么办，就是很难受",
+    "我试过很多方法都没用",
+    "有时候我觉得是不是我自己的问题",
+    "周围没人理解我，我只能自己扛着",
+    "你能理解这种感觉吗？",
+    "谢谢你听我说这些",
+    "这种情况已经持续很久了",
+    "我真的很迷茫",
+    "说不清楚，就是心里堵得慌",
+    "感觉活着好累啊",
+    "我不知道跟谁说，只能跟你说",
+    "其实不只是这件事，还有好多事让我烦",
+    "嗯...我也不知道从哪里说起",
+    "你说我是不是太矫情了",
+    "其实我平时不是这样的，但最近...",
+    "家里人也不理解我，觉得我想太多",
+    "我试过跟朋友说，但他们都不当回事",
+    "有时候早上醒来就不想起床",
+    "我不知道这种状态还要持续多久",
+    "谢谢你，终于有人愿意认真听我说话了",
+]
+
+# ====== 新增：用户拒绝推荐语 ======
+USER_DECLINE_PHRASES = [
+    "不用了，我就想聊聊",
+    "不想听故事，你能理解我的感受吗？",
+    "算了，听了也开心不起来",
+    "其实我更想知道怎么解决这个问题",
+    "不用讲笑话了，你能给我一些建议吗？",
+    "我现在笑不出来...",
+    "听了也没用，我的问题不是故事能解决的",
+    "不要了吧，我就想有个人听我说说话",
+    "其实我不太想听这些，你陪我聊聊就好",
+    "你知道吗，这些笑话和故事对我没用的",
+    "别讲那些了，我真正需要的是有人理解我",
+    "说实话我现在什么都不想听，就想哭一场",
+]
+
+# ====== 新增：被拒绝后的尊重回复 ======
+FALLBACK_EMPATHY = {
+    "焦虑": [
+        "没关系，不想听故事也没事。说说看，现在最让你焦虑的是什么呢？",
+        "好的，不勉强你。我们聊聊你最近的具体情况吧。",
+        "理解，那我们就这样聊聊。你觉得焦虑的来源主要是什么？",
+    ],
+    "抑郁": [
+        "理解，我现在就陪着你。你想聊什么都可以。",
+        "没关系的，我们就这样聊聊也挺好。你最近睡眠怎么样？",
+        "好的，你说得对，有些感受不是故事能解决的。你愿意多说说吗？",
+    ],
+    "人际": [
+        "好的，那我就在这儿听你说。你觉得人际关系中最困扰你的是什么？",
+        "没关系，我们继续聊聊你的感受吧。",
+    ],
+    "家庭": [
+        "好的，那我们继续聊聊。你和家人的关系是从什么时候开始变紧张的？",
+        "没关系，家庭问题确实不是简单一个故事能解决的。你多跟我说说。",
+    ],
+    "职场": [
+        "理解，工作上的压力确实不是笑话就能化解的。你现在的工作状态怎么样？",
+        "好的，我们聊聊你的情况。你觉得最让你累的是什么？",
+    ],
+    "学业": [
+        "好的，那我们继续聊聊。你现在的学习状态怎么样？",
+        "没关系，考试压力确实不是笑话能解决的。你备考遇到什么困难了？",
+    ],
+    "日常": [
+        "没关系，我们就这样聊聊也挺好。",
+        "好的，你想聊什么都可以，我在这儿听着。",
+    ],
+}
+
+# ====== 新增：深度共情追问（纯共情模式第4轮） ======
+FOLLOWUP_EMPATHY = {
+    "焦虑": [
+        "这种感觉一定很辛苦。焦虑往往是因为我们在乎，但这份在乎也变成了负担。你觉得除了聊天，还有什么能让你稍微好受一点？",
+        "我理解。焦虑就像是心里有一只停不下来的陀螺。你能试着说说最让你安心的时刻是什么吗？",
+    ],
+    "抑郁": [
+        "谢谢你的信任。低落的时候，未来好像都蒙上了一层灰。但我想让你知道，你并不孤单。",
+        "你辛苦了。有时候情绪就是会莫名其妙地低落，这不是你的错。你想聊聊那些让你稍微感到温暖的小事吗？",
+    ],
+    "人际": [
+        "每个人都是一座孤岛，但人与人之间的桥梁是需要时间去搭建的。你不必急于改变自己。",
+        "能感受到你的孤独。和人交往有时候就像学一门语言，需要不断尝试和练习。",
+    ],
+    "家庭": [
+        "家是我们最深的牵绊也是最容易受伤的地方。你愿意聊聊你期望的家是什么样的吗？",
+        "家庭关系真的很复杂，爱中掺杂着期待和失望。但无论如何，你的感受都是重要的。",
+    ],
+    "职场": [
+        "职场的压力有时候真的让人喘不过气。除了工作，你还有哪些能让你感到快乐的事情？",
+        "能理解你的疲惫。有时候我们需要给自己的生活留一点缝隙，让光透进来。",
+    ],
+    "学业": [
+        "学习是一场长跑不是短跑，累了就歇一歇。你已经很努力了，这不是空话。",
+        "我理解那种付出了却看不到结果的感觉。但每一个脚步都在积累，虽然现在可能看不到。",
+    ],
+    "日常": [
+        "谢谢你跟我说这些。生活中的每一个小情绪都值得被温柔对待。",
+        "每个人都需要一个倾诉的出口，很高兴你愿意让我成为这个出口。",
+    ],
+}
+
 # 第3轮索要语轮询计数器（全局，确保不同对话使用不同索要语）
 _USER_ASK_INDEX = 0
 _USER_ASK_SHUFFLED = []
@@ -204,39 +351,146 @@ def _next_user_ask():
     return phrase
 
 
+def _gen_empathic_no_recommend(emotion):
+    """纯共情回复：不推荐故事/笑话，只做心理咨询"""
+    templates = EMPATHY_NO_RECOMMEND.get(emotion, EMPATHY_NO_RECOMMEND["日常"])
+    return random.choice(templates)
+
+
+def _gen_followup_empathy(emotion):
+    """深度共情追问（纯共情模式第4轮）"""
+    templates = FOLLOWUP_EMPATHY.get(emotion, FOLLOWUP_EMPATHY["日常"])
+    return random.choice(templates)
+
+
+def _gen_fallback_empathy(emotion):
+    """被用户拒绝后的尊重回复"""
+    templates = FALLBACK_EMPATHY.get(emotion, FALLBACK_EMPATHY["日常"])
+    return random.choice(templates)
+
+
+# 第5轮用户切换话题语
+USER_SWITCH_TOPIC_PHRASES = [
+    "其实我还想说说另一件事...",
+    "不说这个了，我还有个问题想问你",
+    "对了，我最近还遇到了一个情况",
+    "说到这个，我还有其他方面的困扰",
+    "这件事先放一边，还有件事让我更难受",
+]
+
+
 def generate_fused_dialogue(question_text, story_item, emotion):
-    """构造完整的情绪倾诉+索要故事/笑话的多轮对话
+    """构造多样化的多轮对话
 
-    第2轮 assistant 内容完全由 generate_empathic_reply() 生成，
-    不再拼接原始 assistant 回复。
+    5种对话模式，覆盖真实咨询中的各种情况：
 
-    第3轮采用轮询策略而非 random.choice，确保10种索要语均匀出现。
+      - recommend (25%):    四轮推荐模式 — 共情→推荐→索要→讲故事
+      - pure_empathy (25%): 四轮纯共情 — 共情→倾诉→深度回应（不推荐）
+      - user_decline (15%): 四轮拒绝 — 共情→推荐→拒绝→尊重
+      - short_empathy (15%): 二轮短对话 — 倾诉→共情（不推荐，不索要）
+      - extended (20%):     五轮长对话 — 情感倾诉→推荐→索要→讲故事→追问→回应
+
+    这样模型学到的不是"死板的推荐流程"，而是"根据不同情境灵活应对"。
     """
     story_text = story_item.get("text", "") or story_item.get("content", "")
     category = story_item.get("category", "其他")
 
-    # 第2轮：完全由共情模板生成
-    empathic_reply = generate_empathic_reply(emotion)
+    pattern = random.choices(
+        ["recommend", "pure_empathy", "user_decline", "short_empathy", "extended"],
+        weights=[0.25, 0.25, 0.15, 0.15, 0.20],
+        k=1,
+    )[0]
 
-    # 区分故事/笑话的推荐语
-    if category == "笑话":
-        ask_reason = "笑一笑心情会好一些"
+    # ---- 模式1：推荐（原有逻辑）----
+    if pattern == "recommend":
+        empathic_reply = generate_empathic_reply(emotion)
+        if category == "笑话":
+            ask_reason = "笑一笑心情会好一些"
+        else:
+            ask_reason = "温暖的故事最能治愈人心了"
+        user_ask = _next_user_ask()
+
+        dialogue = {
+            "emotion": emotion, "category": category,
+            "conversations": [
+                {"role": "user", "content": question_text},
+                {"role": "assistant", "content": f"{empathic_reply} 要听个{category}吗？{ask_reason}"},
+                {"role": "user", "content": user_ask},
+                {"role": "assistant", "content": story_text},
+            ]
+        }
+
+    # ---- 模式2：纯共情（不推荐故事/笑话）----
+    elif pattern == "pure_empathy":
+        reply1 = _gen_empathic_no_recommend(emotion)
+        user_continue = random.choice(USER_CONTINUE_PHRASES)
+        reply2 = _gen_followup_empathy(emotion)
+
+        dialogue = {
+            "emotion": emotion, "category": "无",
+            "conversations": [
+                {"role": "user", "content": question_text},
+                {"role": "assistant", "content": reply1},
+                {"role": "user", "content": user_continue},
+                {"role": "assistant", "content": reply2},
+            ]
+        }
+
+    # ---- 模式3：用户拒绝推荐 ----
+    elif pattern == "user_decline":
+        empathic_reply = generate_empathic_reply(emotion)
+        if category == "笑话":
+            ask_reason = "笑一笑心情会好一些"
+        else:
+            ask_reason = "温暖的故事最能治愈人心了"
+        user_decline = random.choice(USER_DECLINE_PHRASES)
+        fallback = _gen_fallback_empathy(emotion)
+
+        dialogue = {
+            "emotion": emotion, "category": category,
+            "conversations": [
+                {"role": "user", "content": question_text},
+                {"role": "assistant", "content": f"{empathic_reply} 要听个{category}吗？{ask_reason}"},
+                {"role": "user", "content": user_decline},
+                {"role": "assistant", "content": fallback},
+            ]
+        }
+
+    # ---- 模式4：短对话（纯共情2轮，不推荐不索要）----
+    elif pattern == "short_empathy":
+        reply1 = _gen_empathic_no_recommend(emotion)
+
+        dialogue = {
+            "emotion": emotion, "category": "无",
+            "conversations": [
+                {"role": "user", "content": question_text},
+                {"role": "assistant", "content": reply1},
+            ]
+        }
+
+    # ---- 模式5：五轮长对话（推荐→索要→讲故事→追问→回应）----
     else:
-        ask_reason = "温暖的故事最能治愈人心了"
+        empathic_reply = generate_empathic_reply(emotion)
+        if category == "笑话":
+            ask_reason = "笑一笑心情会好一些"
+        else:
+            ask_reason = "温暖的故事最能治愈人心了"
+        user_ask = _next_user_ask()
+        user_followup = random.choice(USER_SWITCH_TOPIC_PHRASES)
+        followup_reply = _gen_empathic_no_recommend(emotion)
 
-    # 第3轮：轮询取索要语（不再是随机choice，确保10种变体全部出现）
-    user_ask = _next_user_ask()
+        dialogue = {
+            "emotion": emotion, "category": category,
+            "conversations": [
+                {"role": "user", "content": question_text},
+                {"role": "assistant", "content": f"{empathic_reply} 要听个{category}吗？{ask_reason}"},
+                {"role": "user", "content": user_ask},
+                {"role": "assistant", "content": story_text[:200] + "..." if len(story_text) > 200 else story_text},
+                {"role": "user", "content": user_followup},
+                {"role": "assistant", "content": followup_reply},
+            ]
+        }
 
-    dialogue = {
-        "emotion": emotion,
-        "category": category,
-        "conversations": [
-            {"role": "user", "content": question_text},
-            {"role": "assistant", "content": f"{empathic_reply} 要听个{category}吗？{ask_reason}"},
-            {"role": "user", "content": user_ask},
-            {"role": "assistant", "content": story_text},
-        ]
-    }
     return dialogue
 
 
@@ -259,9 +513,17 @@ EMPTY_RESPONSE_PATTERNS = [
 
 
 def validate_fused_dialogue(dialogue):
-    """检查融合对话的基本质量，不合格返回False"""
+    """检查融合对话的基本质量，不合格返回False
+
+    改进：适应多种对话模式，不再强制第2轮必须推荐故事/笑话。
+    - recommend 模式：四轮，第2轮含推荐
+    - pure_empathy 模式：四轮，第2轮不含推荐（纯共情）
+    - user_decline 模式：四轮，第2轮推荐 + 第3轮拒绝
+    """
     conversations = dialogue.get("conversations", [])
-    if len(conversations) != 4:
+    num_turns = len(conversations)
+    # 支持 2/4/5 轮对话结构
+    if num_turns not in (2, 4, 5):
         return False
 
     # 检查是否有空内容
@@ -270,53 +532,49 @@ def validate_fused_dialogue(dialogue):
         if not content:
             return False
 
-    # 检查第2轮是否包含"故事"或"笑话"关键词（确保推荐语正常）
-    round2_content = conversations[1].get("content", "")
-    if "故事" not in round2_content and "笑话" not in round2_content:
-        return False
+    # 第2轮及之后内容由 generate_fused_dialogue() 担保非空且语义合理
 
-    # ---- 内容安全过滤：第4轮敏感词检查 ----
-    round4_content = conversations[3].get("content", "")
-    round4_lower = round4_content.lower()
+    # ---- 内容安全过滤：仅对含故事/笑话的轮次检查敏感词 ----
+    # 安全过滤的检查轮次：故事内容在 4/5 轮对话中的最后一轮assistant（索引 3）
+    # 2 轮对话不含故事内容，跳过敏感词检查
+    if num_turns >= 4:
+        story_round = conversations[3]  # 4轮对话: 第4轮; 5轮对话: 第4轮是故事
+        story_content = story_round.get("content", "")
+        story_lower = story_content.lower()
 
-    # 检查第4轮是否包含不当词汇
-    for kw in BLOCKED_KEYWORDS:
-        if kw in round4_content or kw in round4_lower:
-            print(f"    ⛔ 跳过含敏感词[{kw}]的融合对话")
+        # 只有实际含故事内容时才做敏感词检查
+        if dialogue.get("category") not in ("无", None):
+            for kw in BLOCKED_KEYWORDS:
+                if kw in story_content or kw in story_lower:
+                    print(f"    ⛔ 跳过含敏感词[{kw}]的融合对话")
+                    return False
+
+        # ---- 检查第1轮和故事轮组合的安全性 ----
+        round1_content = conversations[0].get("content", "")
+        round1_lower = round1_content.lower()
+        severe_negative_keywords = ["想死", "自杀", "活不下去", "不想活", "死了算"]
+        for severe_kw in severe_negative_keywords:
+            if severe_kw in round1_lower:
+                if dialogue.get("category") not in ("无", "故事", None):
+                    print(f"    ⛔ 用户'{severe_kw}'但推荐了笑话，跳过（必须用暖心故事）")
+                    return False
+                for kw in BLOCKED_KEYWORDS:
+                    if kw in story_content or kw in story_lower:
+                        print(f"    ⛔ 严重用户场景下第4轮含敏感词[{kw}]，跳过")
+                        return False
+                break
+
+        # 故事/笑话正文长度检查
+        if dialogue.get("category") not in ("无", None) and len(story_content) < 30:
             return False
 
-    # ---- 检查第1轮和第4轮组合的安全性 ----
-    round1_content = conversations[0].get("content", "")
-    round1_lower = round1_content.lower()
-    severe_negative_keywords = ["想死", "自杀", "活不下去", "不想活", "死了算"]
-    for severe_kw in severe_negative_keywords:
-        if severe_kw in round1_lower:
-            # 用户有严重负面倾向时，第4轮必须是"故事"类型
-            if dialogue.get("category") != "故事":
-                print(f"    ⛔ 用户'{severe_kw}'但推荐了笑话，跳过（必须用暖心故事）")
-                return False
-            # 同时检查故事内容本身也不包含不当内容（二次防御）
-            for kw in BLOCKED_KEYWORDS:
-                if kw in round4_content or kw in round4_lower:
-                    print(f"    ⛔ 严重用户场景下第4轮含敏感词[{kw}]，跳过")
-                    return False
-            break
-
-    # 检查第4轮（故事/笑话正文）内容长度≥30字（原20字，已提高标准）
-    if len(round4_content) < 30:
-        return False
-
-    # 检查第4轮是否空洞（只有哈哈/呵呵等敷衍语）
-    stripped = round4_content.strip()
-    # 如果去掉所有标点和空格后，剩余完全由空洞模式组成，判定为空洞
-    import re
-    cleaned = re.sub(r'[\s,，。！？、；：""''【】《》（）\!\?\.,;:\(\)\[\]\{\}]', '', stripped)
-    if cleaned and all(cleaned == pat or cleaned.startswith(pat) or cleaned.endswith(pat) for pat in EMPTY_RESPONSE_PATTERNS):
-        return False
-    # 更严格的单独检查：如果第4轮真的是空洞敷衍（纯表情/纯语气词），也应拒绝
-    hollow_count = sum(1 for pat in EMPTY_RESPONSE_PATTERNS if pat in cleaned)
-    if hollow_count >= 2 and len(cleaned) <= 10:
-        return False
+        # 空洞内容检查
+        stripped = story_content.strip()
+        import re
+        cleaned = re.sub(r'[\s,，。！？、；：""''【】《》（）\!\?\.,;:\(\)\[\]\{\}]', '', stripped)
+        hollow_count = sum(1 for pat in EMPTY_RESPONSE_PATTERNS if pat in cleaned)
+        if hollow_count >= 2 and len(cleaned) <= 10:
+            return False
 
     return True
 
